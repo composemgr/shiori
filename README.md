@@ -47,8 +47,8 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/config/shiori` - Data storage
-- `./rootfs/data/shiori` - Data storage
+- `./volumes/config/shiori` - Data storage
+- `./volumes/data/shiori` - Data storage
 
 ## 🔍 Logging
 
