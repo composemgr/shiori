@@ -21,8 +21,8 @@ services:
       PUID: ${SERVICE_USER:-1000}
       PGID: ${SERVICE_GROUP:-1000}
     volumes:
-      - ./rootfs/config/shiori:/config
-      - ./rootfs/data/shiori:/data
+      - ./volumes/config/shiori:/config
+      - ./volumes/data/shiori:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8088"]
       interval: 30s
