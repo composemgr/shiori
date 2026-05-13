@@ -1,5 +1,6 @@
 # nginx proxy address - http://172.17.0.1:8088
 
+name: shiori
 x-logging: &default-logging
   driver: json-file
   options:
@@ -7,28 +8,30 @@ x-logging: &default-logging
     max-file: "1"
 
 services:
-  shiori:
+  app:
     image: ghcr.io/go-shiori/shiori:latest
+    pull_policy: always
     container_name: shiori-app
-    restart: unless-stopped
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
     logging: *default-logging
     networks:
       - shiori
     ports:
-      - "8088:8088"
+      - "172.17.0.1:8088:8080"
     environment:
       TZ: ${TZ:-America/New_York}
-      PUID: ${SERVICE_USER:-1000}
-      PGID: ${SERVICE_GROUP:-1000}
+      SHIORI_DIR: /data
+      SHIORI_DBMS: sqlite3
     volumes:
-      - ./volumes/config/shiori:/config
       - ./volumes/data/shiori:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8088"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080"]
       interval: 30s
       timeout: 10s
       retries: 3
 
 networks:
   shiori:
+    name: shiori
     external: false
