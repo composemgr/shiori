@@ -24,7 +24,8 @@ services:
     environment:
       TZ: ${TZ:-America/New_York}
       SHIORI_DIR: /data
-      SHIORI_DBMS: sqlite3
+      SHIORI_DATABASE_URL: sqlite:///data/shiori.db
+      SHIORI_HTTP_SECRET_KEY: ${APP_SECRET_KEY:-changeme_secret_key_min_32_chars}
       CONTAINER_NAME: shiori-app
       HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
     volumes:
