@@ -1,62 +1,41 @@
-# nginx proxy address - http://172.17.0.1:8088
+# nginx proxy address - http://172.17.0.1:64342
 
 name: shiori
 x-logging: &default-logging
-  driver: json-file
   options:
-    max-size: "5m"
-    max-file: "1"
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
 
 services:
   app:
     image: ghcr.io/go-shiori/shiori:latest
-    pull_policy: always
     container_name: shiori-app
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
     hostname: ${BASE_HOST_NAME:-$HOSTNAME}
     restart: always
+    pull_policy: always
     logging: *default-logging
-    networks:
-      - shiori
-      - proxy
-      - cloudflare
-    ports:
-      - "172.17.0.1:8088:8080"
     environment:
       TZ: ${TZ:-America/New_York}
-      SHIORI_DIR: /data
-      SHIORI_DATABASE_URL: sqlite:///data/shiori.db
-      SHIORI_HTTP_SECRET_KEY: ${APP_SECRET_KEY:-changeme_secret_key_min_32_chars}
       CONTAINER_NAME: shiori-app
       HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+      SHIORI_DIR: /data
+      SHIORI_HTTP_ADDRESS: 0.0.0.0:8080
+      SHIORI_DATABASE_URL: sqlite:///data/shiori.db
+    ports:
+      - '172.17.0.1:64342:8080'
     volumes:
-      - ./volumes/data/shiori:/data
+      - './volumes/data/shiori:/data:z'
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080"]
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8080']
       interval: 30s
       timeout: 10s
       retries: 3
-    labels:
-      - 'traefik.enable=true'
-      - 'cloudflare.enable=true'
-      - 'traefik.docker.network=proxy'
-      - 'cloudflare.service=http://shiori-app:8080'
-      - 'cloudflare.hostname=shiori.${CLOUDFLARE_ZONE_NAME:-}'
-      - 'traefik.http.routers.shiori-app.entrypoints=http'
-      - 'traefik.http.routers.shiori-app-secure.tls=true'
-      - 'traefik.http.routers.shiori-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
-      - 'traefik.http.middlewares.shiori-app-https-redirect.redirectscheme.scheme=https'
-      - 'traefik.http.routers.shiori-app.middlewares=shiori-app-https-redirect'
-      - 'traefik.http.routers.shiori-app-secure.entrypoints=https'
-      - 'traefik.http.routers.shiori-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
-      - 'traefik.http.routers.shiori-app-secure.tls.certresolver=cloudflare'
-      - 'traefik.http.routers.shiori-app-secure.service=shiori-app'
-      - 'traefik.http.services.shiori-app.loadbalancer.server.port=8080'
+    networks:
+      - shiori
 
 networks:
   shiori:
     name: shiori
     external: false
-  proxy:
-    external: true
-  cloudflare:
-    external: true

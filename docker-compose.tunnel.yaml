@@ -1,0 +1,44 @@
+name: shiori
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  app:
+    image: ghcr.io/go-shiori/shiori:latest
+    container_name: shiori-app
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: shiori-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+      SHIORI_DIR: /data
+      SHIORI_HTTP_ADDRESS: 0.0.0.0:8080
+      SHIORI_DATABASE_URL: sqlite:///data/shiori.db
+    volumes:
+      - './volumes/data/shiori:/data:z'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8080']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - 'cloudflare.enable=true'
+      - 'cloudflare.service=http://shiori-app:8080'
+      - 'cloudflare.hostname=${BASE_HOST_NAME:-$HOSTNAME}'
+    networks:
+      - shiori
+      - cloudflare
+
+networks:
+  shiori:
+    name: shiori
+    external: false
+  cloudflare:
+    external: true

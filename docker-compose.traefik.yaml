@@ -1,0 +1,52 @@
+name: shiori
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  app:
+    image: ghcr.io/go-shiori/shiori:latest
+    container_name: shiori-app
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: shiori-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+      SHIORI_DIR: /data
+      SHIORI_HTTP_ADDRESS: 0.0.0.0:8080
+      SHIORI_DATABASE_URL: sqlite:///data/shiori.db
+    volumes:
+      - './volumes/data/shiori:/data:z'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8080']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.shiori-app.entrypoints=http'
+      - 'traefik.http.routers.shiori-app.rule=Host(`${BASE_HOST_NAME:-$HOSTNAME}`)'
+      - 'traefik.http.routers.shiori-app.middlewares=shiori-app-https-redirect'
+      - 'traefik.http.middlewares.shiori-app-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.shiori-app-secure.entrypoints=https'
+      - 'traefik.http.routers.shiori-app-secure.rule=Host(`${BASE_HOST_NAME:-$HOSTNAME}`)'
+      - 'traefik.http.routers.shiori-app-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.shiori-app-secure.service=shiori-app'
+      - 'traefik.http.services.shiori-app.loadbalancer.server.port=8080'
+    networks:
+      - shiori
+      - traefik
+
+networks:
+  shiori:
+    name: shiori
+    external: false
+  traefik:
+    external: true
